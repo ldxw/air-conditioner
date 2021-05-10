@@ -1,7 +1,14 @@
 import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
-import { Box, Typography, Fade } from "@material-ui/core";
-import logo from "../logo.svg";
+import { Box, Grid, Typography, Fade } from "@material-ui/core";
+import logo from "../../logo.svg";
+
+import * as pkg from "../../../package.json";
+
+import "./AirConditioner.scss";
+import { useAppSelector } from "../../app/hooks";
+
+import { AcMode, selectTemperature } from "./acSlice";
 
 const acColor = {
   border: "#e0e0e0",
@@ -11,6 +18,7 @@ const acColor = {
 
 const useStyles = makeStyles((theme) => ({
   acBorder: {
+    borderRadius: 10,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
@@ -22,7 +30,7 @@ const useStyles = makeStyles((theme) => ({
     width: 12,
   },
   acStatus: {
-    // backgroundColor: (props) => props.backgroundColor,
+    backgroundColor: (props?: any) => props.backgroundColor || "transparent",
   },
   energyLabel: {
     backgroundColor: "#4ea5f5",
@@ -45,13 +53,28 @@ function AcBorder(props: any) {
 }
 
 /**
+ * 空调温度
+ * @returns
+ */
+function AcTemperature() {
+  const temperature = useAppSelector(selectTemperature);
+  return (
+    <Typography variant="h4" align="center">
+      <span className="font-digit ac-temperature">{temperature}</span>
+      <small className="font-digit">°C</small>
+    </Typography>
+  );
+}
+
+/**
  * 显示屏（温度/图标）
  * @param props
  */
-function AcDisplay(props: any) {
+const AcDisplay = React.forwardRef((props: { mode: AcMode }, ref) => {
   return (
     <Box
       {...props}
+      ref={ref}
       position="absolute"
       top={25}
       right={30}
@@ -60,13 +83,10 @@ function AcDisplay(props: any) {
       <Typography align="left" variant="subtitle2">
         <span>{props.mode === "cold" ? "❄" : "☀️"}</span>️️
       </Typography>
-      <Typography variant="h4" align="center">
-        {props.temperature}
-        <small>°C</small>
-      </Typography>
+      <AcTemperature />
     </Box>
   );
-}
+});
 
 /**
  * 空调 Logo
@@ -76,11 +96,22 @@ function AcLogo(props: any) {
   return (
     // <Box align="center" mt={12}>
     <Box textAlign="center" mt={12}>
-      <img className={props.className} src={logo} alt="logo" />
+      <a
+        href={pkg.repository.url}
+        title={pkg.description}
+        target="_blank"
+        rel="noreferrer noopener"
+      >
+        <img className={props.className} src={logo} alt="logo" />
+      </a>
     </Box>
   );
 }
 
+/**
+ * 出风口线
+ * @returns
+ */
 function AirOutlet() {
   return <Box mt={1} border={1} borderColor={acColor.border}></Box>;
 }
@@ -89,7 +120,8 @@ function AirOutlet() {
  * 空调状态
  * @param props
  */
-function AcStatus(props: any) {
+function AcStatus(props: { status: boolean }) {
+  // 空调状态小灯
   const led = { backgroundColor: props.status ? "#38F709" : acColor.border };
   const classes = useStyles(led);
   return (
@@ -164,7 +196,25 @@ function EnergyLabel(props: any) {
         width="100%"
         bgcolor="background.paper"
       >
-        <Box bgcolor="green" height={3} width="40%"></Box>
+        <Grid container>
+          <Box bgcolor="green" height={3} width="40%"></Box>
+          <Box
+            height={3}
+            marginLeft="40%"
+            style={{
+              borderTop: 1.5,
+              borderRight: 2,
+              borderBottom: 1.5,
+              borderLeft: 0,
+              borderTopColor: "transparent",
+              borderRightColor: "green",
+              borderBottomColor: "transparent",
+              borderLeftColor: "transparent",
+              borderStyle: "solid",
+            }}
+          ></Box>
+          <Box bgcolor="green" height={3} width="10%"></Box>
+        </Grid>
         <Box mt={0.25} bgcolor="lightGreen" height={3} width="50%"></Box>
         <Box mt={0.25} bgcolor="#ffc107" height={3} width="60%"></Box>
         <Box mt={0.25} bgcolor="orange" height={3} width="70%"></Box>
@@ -191,9 +241,9 @@ function EnergyLabel(props: any) {
  * 风特效
  * @param props
  */
-function WindEffect(props: any) {
+const WindEffect = React.forwardRef((props, ref) => {
   return (
-    <Box {...props} mt={3} display="flex" justifyContent="center">
+    <Box {...props} ref={ref} mt={3} display="flex" justifyContent="center">
       <Box
         style={{ transform: "rotate(10deg)" }}
         bgcolor={acColor.wind}
@@ -209,19 +259,22 @@ function WindEffect(props: any) {
       ></Box>
     </Box>
   );
-}
+});
 
 /**
  * 空调
- * @param props
  */
-export default function AirConditioner(props: any) {
-  const classes = useStyles();
+export default function AirConditioner(props: {
+  mode: AcMode;
+  status: boolean;
+  temperature: number;
+}) {
+  const classes = useStyles(props);
   return (
     <Box>
       <AcBorder className={classes.acBorder}>
         <Fade in={props.status}>
-          <AcDisplay mode={props.mode} temperature={props.temperature} />
+          <AcDisplay mode={props.mode} />
         </Fade>
         <AcLogo className={classes.acLogo} />
         <AirOutlet />
